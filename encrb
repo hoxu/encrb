@@ -26,7 +26,7 @@ class Encrb:
 		# rsync
 		if err == 0:
 			try:
-				destination = self.destination + path.strip('/').replace('/', '-')
+				destination = os.path.join(self.destination, path.strip('/').replace('/', '-'))
 				print 'Rsyncing encrypted "%s" to "%s"...' % (path, destination)
 				subprocess.call(['rsync', '-avzP', '--bwlimit', str(self.options.bwlimit), tmpdir + '/', destination])
 			except KeyboardInterrupt, e:
