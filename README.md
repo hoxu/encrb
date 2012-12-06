@@ -18,10 +18,12 @@ Usage
     Options:
       -h, --help            show this help message and exit
       -k KEYFILE, --keyfile=KEYFILE
-                            encfs keyfile to use
+                            encfs keyfile to use [~/.encfs6-encrb.xml]
       -p PASSFILE, --passfile=PASSFILE
-                            file containing encfs keyfile password
+                            file containing encfs keyfile password [~/.encfs-
+                            password]
       -b BWLIMIT, --bwlimit=BWLIMIT
+                            Bandwidth limit (KiB/s) for rsync [0]
 
 Dependencies
 ------------
