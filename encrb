@@ -44,9 +44,9 @@ class Encrb:
 
 	def run(self):
 		parser = optparse.OptionParser(usage='usage: %prog [options] dir-to-back-up1... remotepath')
-		parser.add_option('-k', '--keyfile', dest='keyfile', default='~/.encfs6-encrb.xml', help='encfs keyfile to use')
-		parser.add_option('-p', '--passfile', dest='passfile', default='~/.encfs-password', help='file containing encfs keyfile password')
-		parser.add_option('-b', '--bwlimit', dest='bwlimit', default=0, type='int')
+		parser.add_option('-k', '--keyfile', dest='keyfile', default='~/.encfs6-encrb.xml', help='encfs keyfile to use [%default]')
+		parser.add_option('-p', '--passfile', dest='passfile', default='~/.encfs-password', help='file containing encfs keyfile password [%default]')
+		parser.add_option('-b', '--bwlimit', dest='bwlimit', default=0, type='int', help='Bandwidth limit (KiB/s) for rsync [%default]')
 
 		(options, args) = parser.parse_args()
 		self.options = options
