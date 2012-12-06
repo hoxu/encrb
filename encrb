@@ -5,21 +5,10 @@
 #
 # Backs up plaintext local directories to remote machine as encrypted, using
 # encfs --reverse and rsync
+import optparse
 import os
 import subprocess
 import time
-
-# TODO make these overridable from commandline
-HOME = os.path.expanduser('~')
-ENCFS_KEYFILE = os.path.join(HOME, '.encfs6-encrb.xml')
-ENCFS_PASSFILE = os.path.join(HOME, '.encfs-password')
-
-# TODO should be commandline parameters
-paths = [
-	'/path/'
-]
-# TODO from commandline
-destinationroot="server:/path/to/backups/"
 
 class Encrb:
 	def backup_path(self, path):
@@ -29,16 +18,15 @@ class Encrb:
 		# create encfs mount
 		print 'Making encfs reverse mount...'
 		env = dict(os.environ)
-		env['ENCFS6_CONFIG'] = ENCFS_KEYFILE
-		err = subprocess.call(['encfs', '--extpass', 'cat %s' % ENCFS_PASSFILE, '--reverse', path, tmpdir], env=env)
+		env['ENCFS6_CONFIG'] = os.path.expanduser(self.options.keyfile)
+		err = subprocess.call(['encfs', '--extpass', 'cat %s' % os.path.expanduser(self.options.passfile), '--reverse', path, tmpdir], env=env)
 
 		# rsync
 		if err == 0:
 			try:
-				destination = destinationroot + path.strip('/').replace('/', '-')
+				destination = self.destination + path.strip('/').replace('/', '-')
 				print 'Rsyncing encrypted "%s" to "%s"...' % (path, destination)
-				# TODO make bwlimit configurable from commandline, default to zero
-				subprocess.call(['rsync', '-avzP', '--bwlimit', '40', tmpdir + '/', destination])
+				subprocess.call(['rsync', '-avzP', '--bwlimit', str(self.options.bwlimit), tmpdir + '/', destination])
 			except KeyboardInterrupt, e:
 				print 'KeyboardInterrupt, sleeping 1 sec, then unmounting'
 				time.sleep(1)
@@ -55,10 +43,24 @@ class Encrb:
 		subprocess.call(['rmdir', tmpdir])
 
 	def run(self):
+		parser = optparse.OptionParser(usage='usage: %prog [options] dir-to-back-up1... remotepath')
+		parser.add_option('-k', '--keyfile', dest='keyfile', default='~/.encfs6-encrb.xml', help='encfs keyfile to use')
+		parser.add_option('-p', '--passfile', dest='passfile', default='~/.encfs-password', help='file containing encfs keyfile password')
+		parser.add_option('-b', '--bwlimit', dest='bwlimit', default=0, type='int')
+
+		(options, args) = parser.parse_args()
+		self.options = options
+		self.args = args
+
+		if len(self.args) < 2:
+			parser.error('Need more than two arguments')
+
+		self.destination = self.args[-1]
 		# TODO check that running new enough encfs (old has bugs in --reverse mode)
 		# TODO create key and password file if does not exist already
-		print 'Paths to back up:', paths
-		for p in paths:
+		print 'Paths to back up:', self.args[:-1]
+		print 'Destination:', self.destination
+		for p in self.args[:-1]:
 			self.backup_path(p)
 
 e = Encrb()
