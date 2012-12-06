@@ -1,0 +1,63 @@
+#!/usr/bin/env python
+# Copyright (c) 2012 Heikki Hokkanen <hoxu at users.sf.net>
+# License: GPLv3
+# encrb - encrypted remote backup
+#
+# Backs up plaintext local directories to remote machine as encrypted, using
+# encfs --reverse and rsync
+import os
+import subprocess
+import time
+
+# TODO make these overridable from commandline
+HOME = os.path.expanduser('~')
+ENCFS_KEYFILE = os.path.join(HOME, '.encfs6-encrb.xml')
+ENCFS_PASSFILE = os.path.join(HOME, '.encfs-password')
+
+# TODO should be commandline parameters
+paths = [
+	'/path/'
+]
+# TODO from commandline
+destinationroot="server:/path/to/backups/"
+
+def backup_path(path):
+	print 'Backing up:', path
+	tmpdir = subprocess.Popen(['mktemp', '-d'], stdout=subprocess.PIPE).communicate()[0].strip()
+
+	# create encfs mount
+	print 'Making encfs reverse mount...'
+	env = dict(os.environ)
+	env['ENCFS6_CONFIG'] = ENCFS_KEYFILE
+	err = subprocess.call(['encfs', '--extpass', 'cat %s' % ENCFS_PASSFILE, '--reverse', path, tmpdir], env=env)
+
+	# rsync
+	if err == 0:
+		try:
+			destination = destinationroot + path.strip('/').replace('/', '-')
+			print 'Rsyncing encrypted "%s" to "%s"...' % (path, destination)
+			# TODO make bwlimit configurable from commandline, default to zero
+			subprocess.call(['rsync', '-avzP', '--bwlimit', '40', tmpdir + '/', destination])
+		except KeyboardInterrupt, e:
+			print 'KeyboardInterrupt, sleeping 1 sec, then unmounting'
+			time.sleep(1)
+			subprocess.call(['fusermount', '-u', tmpdir])
+			subprocess.call(['rmdir', tmpdir])
+			raise e
+	else:
+		print 'encfs returned error', err
+
+	# Unmount
+	print 'Unmounting encfs reverse mount...'
+	subprocess.call(['fusermount', '-u', tmpdir])
+
+	subprocess.call(['rmdir', tmpdir])
+
+def run():
+	# TODO check that running new enough encfs (old has bugs in --reverse mode)
+	# TODO create key and password file if does not exist already
+	print 'Paths to back up:', paths
+	for p in paths:
+		backup_path(p)
+
+run()
