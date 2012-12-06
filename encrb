@@ -51,6 +51,7 @@ class Encrb:
 		(options, args) = parser.parse_args()
 		self.options = options
 		self.args = args
+		print 'Options:', options
 
 		if len(self.args) < 2:
 			parser.error('Need more than two arguments')
