@@ -53,6 +53,8 @@ class Encrb:
 		(options, args) = parser.parse_args()
 		self.options = options
 		self.args = args
+		self.options.keyfile = os.path.expanduser(self.options.keyfile)
+		self.options.passfile = os.path.expanduser(self.options.passfile)
 		print 'Options:', options
 
 		if len(self.args) < 2:
