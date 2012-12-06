@@ -7,6 +7,8 @@
 # encfs --reverse and rsync
 import optparse
 import os
+import random
+import string
 import subprocess
 import time
 
@@ -58,11 +60,23 @@ class Encrb:
 
 		self.destination = self.args[-1]
 		# TODO check that running new enough encfs (old has bugs in --reverse mode)
-		# TODO create key and password file if does not exist already
 		print 'Paths to back up:', self.args[:-1]
 		print 'Destination:', self.destination
+		self.setup_once()
 		for p in self.args[:-1]:
 			self.backup_path(p)
+
+	def setup_once(self):
+		if os.path.exists(self.options.keyfile) or os.path.exists(self.options.passfile):
+			return
+
+		print '!!!!! Keyfile and passfile missing, running in setup mode. Press enter for default encfs settings.'
+
+		# generate and save password
+		password = ''.join(random.choice(string.letters + string.digits) for _ in range(10))
+		f = open(self.options.passfile, 'w')
+		f.write(password)
+		f.close()
 
 e = Encrb()
 e.run()
