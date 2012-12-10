@@ -38,6 +38,14 @@ keyfile to the same place where you put the actual backups. And it is a very
 good idea to have multiple backups of the keyfile (and password). For maximum
 security, keep the data, the keyfile and the password at different locations.
 
+Running from crontab
+--------------------
+
+You most likely want to run encrb from crontab. I recommend using flock or
+something similar to make sure no multiple instances are running, like this:
+
+    30 0 * * * flock -n /tmp/encrb.lockfile /path/to/encrb --bwlimit 100 $HOME/docs $HOME/projects some.server.eu:/home/user/backups/
+
 Dependencies
 ------------
 
