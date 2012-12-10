@@ -29,6 +29,15 @@ Usage
       -b BWLIMIT, --bwlimit=BWLIMIT
                             Bandwidth limit (KiB/s) for rsync [0]
 
+Backing up keyfile and password
+-------------------------------
+
+**Remember to back up the keyfile and the password**! If you lose them, you
+will lose access to the encrypted data. Naturally you should not back up the
+keyfile to the same place where you put the actual backups. And it is a very
+good idea to have multiple backups of the keyfile (and password). For maximum
+security, keep the data, the keyfile and the password at different locations.
+
 Dependencies
 ------------
 
