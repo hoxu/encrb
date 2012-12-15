@@ -10,6 +10,7 @@ import os
 import random
 import string
 import subprocess
+import sys
 import time
 
 class Encrb:
@@ -28,6 +29,7 @@ class Encrb:
 			try:
 				destination = os.path.join(self.destination, path.strip('/').replace('/', '-'))
 				print 'Rsyncing encrypted "%s" to "%s"...' % (path, destination)
+				sys.stdout.flush()
 				subprocess.call(['rsync', '-avzP', '--bwlimit', str(self.options.bwlimit), tmpdir + '/', destination])
 			except KeyboardInterrupt, e:
 				print 'KeyboardInterrupt, sleeping 1 sec, then unmounting'
