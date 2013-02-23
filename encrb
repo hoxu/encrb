@@ -14,10 +14,13 @@ import sys
 import tempfile
 import time
 
+def path_to_string(path):
+	return path.strip('/').replace('/', '-')
+
 class Encrb:
 	def backup_path(self, path):
 		print 'Backing up:', path
-		friendlyname = path.strip('/').replace('/', '-')
+		friendlyname = path_to_string(path)
 		tmpdir = tempfile.mkdtemp('-' + friendlyname)
 
 		# create encfs mount
@@ -56,7 +59,7 @@ class Encrb:
 		print 'Verifying:', path
 
 		# create sshfs mount
-		friendlyname = path.strip('/').replace('/', '-') # TODO make generic function
+		friendlyname = path_to_string(path)
 		mountpath = os.path.join(self.destination, friendlyname)
 		tmpdir = tempfile.mkdtemp('-' + friendlyname)
 		print 'Mounting "%s" sshfs read-only to "%s"...' % (mountpath, tmpdir)
