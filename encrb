@@ -62,34 +62,36 @@ class Encrb:
 		friendlyname = path_to_string(path)
 		mountpath = os.path.join(self.destination, friendlyname)
 		tmpdir = tempfile.mkdtemp('-' + friendlyname)
-		print 'Mounting "%s" sshfs read-only to "%s"...' % (mountpath, tmpdir)
-		subprocess.call(['sshfs', '-o', 'ro', mountpath, tmpdir])
-
-		# create encfs mount
 		tmpdirplain = tempfile.mkdtemp('-%s-plain' % friendlyname)
-		env = self.get_modified_env()
-		print 'Mounting encfs on "%s"...' % tmpdirplain
-		err = subprocess.call(['encfs', '--extpass', 'cat %s' % os.path.expanduser(self.options.passfile), tmpdir, tmpdirplain], env=env)
-		if err != 0:
-			print 'encfs returned error', err
+		print 'Mounting "%s" sshfs read-only to "%s"...' % (mountpath, tmpdir)
+		try:
+			subprocess.check_call(['sshfs', '-o', 'ro', mountpath, tmpdir])
 
-		# compare files
-		print 'Running rsync --dry-run, this should not list any changes...'
-		subprocess.call(['rsync', '-a', '--dry-run', '--verbose', path, tmpdirplain])
+			# create encfs mount
+			print 'Mounting encfs on "%s"...' % tmpdirplain
+			try:
+				env = self.get_modified_env()
+				subprocess.call(['encfs', '--extpass', 'cat %s' % os.path.expanduser(self.options.passfile), tmpdir, tmpdirplain], env=env)
 
-		# wait a bit, or unmounting fails
-		print 'Sleeping a bit...'
-		time.sleep(5)
+				# compare files
+				print 'Running rsync --dry-run, this should not list any changes...'
+				subprocess.call(['rsync', '-a', '--dry-run', path, tmpdirplain])
 
-		# umount encfs
-		print 'Unmounting encfs "%s...' % tmpdirplain
-		subprocess.call(['fusermount', '-u', tmpdirplain])
-		os.rmdir(tmpdirplain)
+			finally:
+				# wait a bit, or unmounting fails
+				print 'Sleeping a bit...'
+				time.sleep(5)
 
-		# umount sshfs
-		print 'Unmounting sshfs "%s"...' % tmpdir
-		subprocess.call(['fusermount', '-u', tmpdir])
-		os.rmdir(tmpdir)
+				# umount encfs
+				print 'Unmounting encfs "%s...' % tmpdirplain
+				subprocess.call(['fusermount', '-u', tmpdirplain])
+
+		finally:
+			# umount sshfs
+			print 'Unmounting sshfs "%s"...' % tmpdir
+			subprocess.call(['fusermount', '-u', tmpdir])
+			os.rmdir(tmpdirplain)
+			os.rmdir(tmpdir)
 
 	def run(self):
 		parser = optparse.OptionParser(usage='usage: %prog [options] dir-to-back-up1... remotepath')
