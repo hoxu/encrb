@@ -11,6 +11,7 @@ import random
 import string
 import subprocess
 import sys
+import tempfile
 import time
 
 class Encrb:
@@ -46,11 +47,53 @@ class Encrb:
 
 		subprocess.call(['rmdir', tmpdir])
 
+	def get_modified_env(self):
+		env = dict(os.environ)
+		env['ENCFS6_CONFIG'] = os.path.expanduser(self.options.keyfile)
+		return env
+
+	def verify_path(self, path):
+		print 'Verifying:', path
+
+		# create sshfs mount
+		friendlyname = path.strip('/').replace('/', '-') # TODO make generic function
+		mountpath = os.path.join(self.destination, friendlyname)
+		tmpdir = tempfile.mkdtemp('-' + friendlyname)
+		print 'Mounting "%s" sshfs read-only to "%s"...' % (mountpath, tmpdir)
+		subprocess.call(['sshfs', '-o', 'ro', mountpath, tmpdir])
+
+		# create encfs mount
+		tmpdirplain = tempfile.mkdtemp('-%s-plain' % friendlyname)
+		env = self.get_modified_env()
+		print 'Mounting encfs on "%s"...' % tmpdirplain
+		err = subprocess.call(['encfs', '--extpass', 'cat %s' % os.path.expanduser(self.options.passfile), tmpdir, tmpdirplain], env=env)
+		if err != 0:
+			print 'encfs returned error', err
+
+		# compare files
+		print 'Running rsync --dry-run, this should not list any changes...'
+		subprocess.call(['rsync', '-a', '--dry-run', '--verbose', path, tmpdirplain])
+
+		# wait a bit, or unmounting fails
+		print 'Sleeping a bit...'
+		time.sleep(5)
+
+		# umount encfs
+		print 'Unmounting encfs "%s...' % tmpdirplain
+		subprocess.call(['fusermount', '-u', tmpdirplain])
+		os.rmdir(tmpdirplain)
+
+		# umount sshfs
+		print 'Unmounting sshfs "%s"...' % tmpdir
+		subprocess.call(['fusermount', '-u', tmpdir])
+		os.rmdir(tmpdir)
+
 	def run(self):
 		parser = optparse.OptionParser(usage='usage: %prog [options] dir-to-back-up1... remotepath')
 		parser.add_option('-k', '--keyfile', dest='keyfile', default='~/.encfs6-encrb.xml', help='encfs keyfile to use [%default]')
 		parser.add_option('-p', '--passfile', dest='passfile', default='~/.encfs-password', help='file containing encfs keyfile password [%default]')
 		parser.add_option('-b', '--bwlimit', dest='bwlimit', default=0, type='int', help='Bandwidth limit (KiB/s) for rsync [%default]')
+		parser.add_option('-v', '--verify', dest='verify', default=False, action="store_true", help="Instead of backing up, verify that the backups match sources")
 
 		(options, args) = parser.parse_args()
 		self.options = options
@@ -68,7 +111,10 @@ class Encrb:
 		print 'Destination:', self.destination
 		self.setup_once()
 		for p in self.args[:-1]:
-			self.backup_path(p)
+			if options.verify:
+				self.verify_path(p)
+			else:
+				self.backup_path(p)
 
 	def setup_once(self):
 		if os.path.exists(self.options.keyfile) or os.path.exists(self.options.passfile):
