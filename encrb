@@ -17,18 +17,18 @@ import time
 class Encrb:
 	def backup_path(self, path):
 		print 'Backing up:', path
-		tmpdir = subprocess.Popen(['mktemp', '-d'], stdout=subprocess.PIPE).communicate()[0].strip()
+		friendlyname = path.strip('/').replace('/', '-')
+		tmpdir = tempfile.mkdtemp('-' + friendlyname)
 
 		# create encfs mount
 		print 'Making encfs reverse mount...'
-		env = dict(os.environ)
-		env['ENCFS6_CONFIG'] = os.path.expanduser(self.options.keyfile)
+		env = self.get_modified_env()
 		err = subprocess.call(['encfs', '--extpass', 'cat %s' % os.path.expanduser(self.options.passfile), '--reverse', path, tmpdir], env=env)
 
 		# rsync
 		if err == 0:
 			try:
-				destination = os.path.join(self.destination, path.strip('/').replace('/', '-'))
+				destination = os.path.join(self.destination, friendlyname)
 				print 'Rsyncing encrypted "%s" to "%s"...' % (path, destination)
 				sys.stdout.flush()
 				subprocess.call(['rsync', '-avz', '--delete-delay', '--bwlimit', str(self.options.bwlimit), tmpdir + '/', destination])
@@ -36,7 +36,7 @@ class Encrb:
 				print 'KeyboardInterrupt, sleeping 1 sec, then unmounting'
 				time.sleep(1)
 				subprocess.call(['fusermount', '-u', tmpdir])
-				subprocess.call(['rmdir', tmpdir])
+				os.rmdir(tmpdir)
 				raise e
 		else:
 			print 'encfs returned error', err
@@ -45,7 +45,7 @@ class Encrb:
 		print 'Unmounting encfs reverse mount...'
 		subprocess.call(['fusermount', '-u', tmpdir])
 
-		subprocess.call(['rmdir', tmpdir])
+		os.rmdir(tmpdir)
 
 	def get_modified_env(self):
 		env = dict(os.environ)
