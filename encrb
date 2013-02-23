@@ -21,7 +21,7 @@ class Encrb:
 		tmpdir = tempfile.mkdtemp('-' + friendlyname)
 
 		# create encfs mount
-		print 'Making encfs reverse mount...'
+		print 'Making encfs reverse mount to "%s"...' % tmpdir
 		env = self.get_modified_env()
 		err = subprocess.call(['encfs', '--extpass', 'cat %s' % os.path.expanduser(self.options.passfile), '--reverse', path, tmpdir], env=env)
 
