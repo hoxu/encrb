@@ -128,7 +128,7 @@ class Encrb:
 		print '!!!!! Keyfile and passfile missing, running in setup mode. Press enter for default encfs settings.'
 
 		# generate and save password
-		password = ''.join(random.choice(string.letters + string.digits) for _ in range(10))
+		password = ''.join(random.choice(string.letters + string.digits) for _ in range(12))
 		f = open(self.options.passfile, 'w')
 		f.write(password)
 		f.close()
