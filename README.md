@@ -9,9 +9,9 @@ Example
 
     $ ./encrb $HOME/documents $HOME/projects some.server.eu:/home/user/backups/
 
-First run will generate a random password, save it to KEYFILE and prompt for
-encfs settings (pressing enter picks the defaults). Further runs will not
-require any user input.
+First run will generate a random password, save it to PASSFILE and prompt for
+encfs settings (pressing enter picks the defaults). Encfs KEYFILE is also
+created. Further runs will not require any user input.
 
 Usage
 -----
